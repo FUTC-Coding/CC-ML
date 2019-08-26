@@ -63,11 +63,10 @@ def go():
     # for i in range(20):
     #     population[i].update()
     #     population[i].draw()
-
+    i = fileGen() + 1
     while any([c.isalive for c in population]):
-        i = fileGen() + 1
-        for c in [c for c in population if c.isalive]:
-            if i != fileGen():
+        if i != fileGen():
+            for c in [c for c in population if c.isalive]:
                 c.update()
                 c.draw()
             canvas.update()

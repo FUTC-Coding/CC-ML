@@ -81,7 +81,7 @@ class RandomBrain(Brain):
         if self.car.speed == 0:
             self.car.accelerate(self.accel)
 
-        if self.goal_sensor.distance < self.best & self.currentGeneration == self.generation:
+        if self.goal_sensor.distance < int(self.best) & self.currentGeneration == self.generation:
             if os.path.isfile("best"):
                 os.remove("best")
 

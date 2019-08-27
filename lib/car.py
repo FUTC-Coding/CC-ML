@@ -27,6 +27,7 @@ class Car:
         self.isalive = True
         self.sensors = []
         self.brain.initialize(self)
+        self.isInGoal = False
 
 
     def points(self):        

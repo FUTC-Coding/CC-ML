@@ -36,14 +36,19 @@ canvas = tkinter.Canvas(width=800, height=600, background="yellow green")
 canvas.pack()
 
 # load track
-track = Track.level(canvas, draw_midline=True, level_number=8)
+track = Track.level(canvas, draw_midline=True, level_number=1)
 track.draw()
 
 # create car
 #car = Car(track, brain_level1.SensorBrain(), color="blue")
 population = []
-for i in range(20):
-    population.append(Car(track, brain_level1.RandomBrain(), color="blue"))
+def populate():
+    if population:
+        for c in [c for c in population]:
+            canvas.delete(c.canvas_shape_id)
+        del population[:]
+    for i in range(20):
+        population.append(Car(track, brain_level1.RandomBrain(), color="blue"))
 
 #def update():
 #    '''Update the car and redraw it.'''
@@ -59,19 +64,25 @@ def fileGen():
     else:
         return 0
 
+
+
 def go():
+    populate()
+    print("length: " + str(len(population)))
     # for i in range(20):
     #     population[i].update()
     #     population[i].draw()
-    i = fileGen() + 1
-    while any([c.isalive for c in population]):
-        if i != fileGen():
-            for c in [c for c in population if c.isalive]:
+    #print(i)
+    while all([not c.isInGoal for c in population]):
+        # print(fileGen())
+        for c in [c for c in population]:
+            if c.isalive or c.isInGoal:
                 c.update()
                 c.draw()
-            canvas.update()
-
-        i += 1
+            else:
+                canvas.delete(c.canvas_shape_id)
+        canvas.update()
+        #i += 1
     #car.update()
     #car.draw()
 
@@ -80,6 +91,7 @@ def go():
 
 
 # start update & mainloop of window
+#i = fileGen() + 1
 go()
 #update()
 tkinter.mainloop()

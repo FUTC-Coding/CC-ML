@@ -27,12 +27,12 @@ class RandomBrain(Brain):
         self.goal_sensor = GoalSensor(self.car)
 
         if not os.path.isfile("best"):
-            self.best = self.goal_sensor.distance + 1
+            self.best = self.goal_sensor.distance
             self.bestTurn = 0
             self.bestAccel = 0
             self.bestDistanceSides = 0
             self.bestDistanceFront = 0
-            self.generation = 1
+            self.generation = 0
             self.currentGeneration = 1
 
             self.turn = random.randrange(90)
@@ -41,7 +41,6 @@ class RandomBrain(Brain):
             self.distance_front = random.randrange(100)
         else:
             self.best = (float(content[0]))
-            print(self.best)
             self.bestTurn = float(content[1])
             self.bestAccel = float(content[2])
             self.bestDistanceFront = float(content[3])
@@ -81,7 +80,14 @@ class RandomBrain(Brain):
         if self.car.speed == 0:
             self.car.accelerate(self.accel)
 
-        if self.goal_sensor.distance < int(self.best) & self.currentGeneration == self.generation:
+        #print("filegeneration: " + str(self.generation))
+        #print("current generation: " + str(self.currentGeneration))
+
+        if self.goal_sensor.distance < 5:
+            self.car.isInGoal = True
+            print("in goal")
+
+        if self.goal_sensor.distance < self.best and self.currentGeneration != self.generation:
             if os.path.isfile("best"):
                 os.remove("best")
 
@@ -98,7 +104,7 @@ class RandomBrain(Brain):
             file.write(str(self.bestAccel) + "\n")
             file.write(str(self.bestDistanceFront) + "\n")
             file.write(str(self.bestDistanceSides) + "\n")
-            file.write(str(self.generation))
+            file.write(str(self.currentGeneration))
             file.close()
 
 

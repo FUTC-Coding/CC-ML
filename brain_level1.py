@@ -8,16 +8,10 @@ from lib.sensors import Sensor, GoalSensor
 import random
 import os
 import os.path
+import time
 
 class RandomBrain(Brain):
-
     def setup(self):
-        if os.path.isfile("best"):
-            with open("best", "r") as f:
-                content = f.readlines()
-                content = [x.strip() for x in content]
-                #print(content)
-
         #self.car.accelerate(4)
         #self.front_left_sensor = Sensor(self.car, angle=-2, x=-6, y=15)
         self.front_center_sensor = Sensor(self.car, angle=0, x=0,y=15)
@@ -25,6 +19,14 @@ class RandomBrain(Brain):
         self.right_sensor = Sensor(self.car, angle=70,x=6,y=15)
         self.left_sensor = Sensor(self.car, angle=-70, x=-6, y=15)
         self.goal_sensor = GoalSensor(self.car)
+        self.time = time.time()
+
+    def calcAttributes(self):
+        if os.path.isfile("best"):
+            with open("best", "r") as f:
+                content = f.readlines()
+                content = [x.strip() for x in content]
+                #print(content)
 
         if not os.path.isfile("best"):
             self.best = self.goal_sensor.distance
@@ -34,6 +36,7 @@ class RandomBrain(Brain):
             self.bestDistanceFront = 0
             self.generation = 0
             self.currentGeneration = 1
+            self.bestTime = 99999999999999999999
 
             self.turn = random.randrange(90)
             self.accel = random.randrange(10)
@@ -47,6 +50,7 @@ class RandomBrain(Brain):
             self.bestDistanceSides = float(content[4])
             self.generation = int(content[5])
             self.currentGeneration = self.generation + 1
+            self.bestTime = float(content[6])
 
             # use 20% surrounding the best previous turn value to calc new random range
             self.turn = random.uniform(self.bestTurn - self.bestTurn / 10, self.bestTurn + self.bestTurn / 10)
@@ -54,21 +58,14 @@ class RandomBrain(Brain):
             self.distance_front = random.uniform(self.bestDistanceFront - self.bestDistanceFront / 10, self.bestDistanceFront + self.bestDistanceFront / 10)
             self.distance_sides = random.uniform(self.bestDistanceSides - self.bestDistanceSides / 10, self.bestDistanceSides + self.bestDistanceSides / 10)
 
-
+    def mutate(self):
+        #mutate with random values in a bigger margin
+        self.turn = random.uniform(self.bestTurn - 20, self.bestTurn + self.bestTurn + 20)
+        self.accel = random.uniform(self.bestAccel - 3, self.bestAccel + 3)
+        self.distance_front = random.uniform(self.bestDistanceFront - 20, self.bestDistanceFront + 20)
+        self.distance_sides = random.uniform(self.bestDistanceSides - 20, self.bestDistanceSides + 20)
 
     def update(self):
-        #print("turn speed: " + str(self.turn))
-        #print("accel speed: " + str(self.accel))
-        #print("distance sides: " + str(self.distance_sides))
-        #print("distance front: " + str(self.distance_front))
-        # print("left:" + str(self.left_sensor.distance))
-        # print("right:" + str(self.right_sensor.distance))
-        # print("center:" + str(self.front_center_sensor.distance))
-        # print("speed" + str(self.car.speed))
-        #print(self.right_sensor.distance)
-        #if self.goal_sensor.distance < 400:
-            #self.car.accelerate(10)
-
         if self.front_center_sensor.is_obstacle_goal:
             pass
         elif self.left_sensor.distance < self.distance_sides or self.right_sensor.distance < self.distance_sides or self.front_center_sensor.distance < self.distance_front:
@@ -80,14 +77,12 @@ class RandomBrain(Brain):
         if self.car.speed == 0:
             self.car.accelerate(self.accel)
 
-        #print("filegeneration: " + str(self.generation))
-        #print("current generation: " + str(self.currentGeneration))
-
-        if self.goal_sensor.distance < 5:
+        if self.goal_sensor.distance < 15:
             self.car.isInGoal = True
             print("in goal")
+            self.time = time.time() - self.time
 
-        if self.goal_sensor.distance < self.best and self.currentGeneration != self.generation:
+        if self.goal_sensor.distance < self.best or self.time < self.bestTime and self.currentGeneration != self.generation:
             if os.path.isfile("best"):
                 os.remove("best")
 
@@ -104,54 +99,101 @@ class RandomBrain(Brain):
             file.write(str(self.bestAccel) + "\n")
             file.write(str(self.bestDistanceFront) + "\n")
             file.write(str(self.bestDistanceSides) + "\n")
-            file.write(str(self.currentGeneration))
+            file.write(str(self.currentGeneration) + "\n")
+            file.write(str(self.time))
             file.close()
 
+class tinyBrainTime(Brain):
+    def calcAttributes(self):
+        if os.path.isfile("best1"):
+            with open("best1", "r") as f:
+                content = f.readlines()
+                content = [x.strip() for x in content]
+                #print(content)
+        self.goal_sensor = GoalSensor(self.car)
+        if not os.path.isfile("best1"):
+            self.best = self.goal_sensor.distance + 1
+            self.bestTurn = 0
+            self.bestAccel = 0
+            self.bestDistance = 0
+            self.generation = 0
+            self.currentGeneration = 1
+            self.bestTime = 99999999999999999999
+            self.bestSensorAngle = 0
+            self.bestSensorX = 0
+            self.bestSensorY = 0
 
-class scriptedBrain(Brain):
+            self.turn = random.randrange(-90,90)
+            self.accel = random.randrange(10)
+            self.distance = random.randrange(100)
+            self.sensorAngle = random.randrange(-90, 90)
+            self.sensorX = random.randrange(-10, 10)
+            self.sensorY = random.randrange(-15, 15)
+        else:
+            self.best = (float(content[0]))
+            self.bestTurn = float(content[1])
+            self.bestAccel = float(content[2])
+            self.bestDistance = float(content[3])
+            self.generation = int(content[4])
+            self.currentGeneration = self.generation + 1
+            self.bestTime = float(content[5])
+            self.bestSensorAngle = float(content[6])
+            self.bestSensorX = float(content[7])
+            self.bestSensorY = float(content[8])
+
+            # use 20% surrounding the best previous turn value to calc new random range
+            self.turn = random.uniform(self.bestTurn - self.bestTurn / 10, self.bestTurn + self.bestTurn / 10)
+            self.accel = random.uniform(self.bestAccel - self.bestAccel / 10, self.bestAccel + self.bestAccel / 10)
+            self.distance = random.uniform(self.bestDistance - self.bestDistance / 10, self.bestDistance + self.bestDistance / 10)
+            self.sensorAngle = random.uniform(self.bestSensorAngle - self.bestSensorAngle / 10, self.bestSensorAngle + self.bestSensorAngle / 10)
+            self.sensorX = random.uniform(self.bestSensorX - self.bestSensorX / 10, self.bestSensorX + self.bestSensorX / 10)
+            self.sensorY = random.uniform(self.bestSensorY - self.bestSensorY / 10, self.bestSensorY + self.bestSensorY / 10)
+
+    def mutate(self):
+        #mutate with random values in a bigger margin
+        self.turn = random.uniform(self.bestTurn - 20, self.bestTurn + self.bestTurn + 20)
+        self.accel = random.uniform(self.bestAccel - 3, self.bestAccel + 3)
+        self.distance = random.uniform(self.bestDistance - 20, self.bestDistance + 20)
+        self.sensorAngle = random.uniform(self.bestSensorAngle - 20, self.bestSensorAngle + 20)
+        self.sensorX = random.uniform(self.bestSensorX - 20, self.bestSensorX + 20)
+        self.sensorY = random.uniform(self.bestSensorY - 20, self.bestSensorY + 20)
+
     def setup(self):
-        self.car.accelerate(4)
-        self.ticks = 0
-        pass
+        self.calcAttributes()
+        self.sensor = Sensor(self.car, angle=self.sensorAngle, x=self.sensorX, y=self.sensorY)
+        self.time = time.time()
 
     def update(self):
-        self.ticks += 1
-        print(self.ticks)
-        if self.ticks == 100:
-            self.car.turn(90)
-        elif self.ticks == 250:
-            self.car.turn(90)
-        elif self.ticks == 350:
-            self.car.turn(90)
-        pass
-
-class SensorBrain(Brain):
-    def setup(self):
-        #self.car.accelerate(4)
-        #self.front_left_sensor = Sensor(self.car, angle=-2, x=-6, y=15)
-        self.front_center_sensor = Sensor(self.car, angle=0, x=0,y=15)
-        #self.front_right_sensor = Sensor(self.car, angle=2, x=6, y=15)
-        self.right_sensor = Sensor(self.car, angle=70,x=6,y=15)
-        self.left_sensor = Sensor(self.car, angle=-70, x=-6, y=15)
-        #self.goal_sensor = GoalSensor(self.car)
-
-    def update(self):
-        # print("left:" + str(self.left_sensor.distance))
-        # print("right:" + str(self.right_sensor.distance))
-        # print("center:" + str(self.front_center_sensor.distance))
-        # print("speed" + str(self.car.speed))
-        #print(self.right_sensor.distance)
-        #if self.goal_sensor.distance < 400:
-            #self.car.accelerate(10)
-
-        if self.front_center_sensor.is_obstacle_goal:
+        if self.sensor.is_obstacle_goal:
             pass
-        elif self.left_sensor.distance < 25 or self.right_sensor.distance < 25 or self.front_center_sensor.distance < 50:
-            if self.left_sensor.distance < self.right_sensor.distance:
-                    self.car.turn(6)
-            elif self.left_sensor.distance > self.right_sensor.distance:
-                    self.car.turn(-6)
+        elif self.sensor.distance < self.distance:
+            self.car.turn(self.turn)
 
         if self.car.speed == 0:
-            self.car.accelerate(4)
+            self.car.accelerate(self.accel)
 
+        if self.goal_sensor.distance < 15:
+            self.car.isInGoal = True
+            print("in goal")
+            self.time = time.time() - self.time
+
+        if self.goal_sensor.distance < self.best or self.time < self.bestTime and self.currentGeneration != self.generation:
+            if os.path.isfile("best1"):
+                os.remove("best1")
+
+            self.best = self.goal_sensor.distance
+            self.bestTime = self.time
+
+            print("written")
+
+            file = open("best1", "w")
+            file.write(str(self.best) + "\n")
+            file.write(str(self.turn) + "\n")
+            file.write(str(self.accel) + "\n")
+            file.write(str(self.distance) + "\n")
+            file.write(str(self.currentGeneration) + "\n")
+            file.write(str(self.bestTime) + "\n")
+            file.write(str(self.sensorAngle) + "\n")
+            file.write(str(self.sensorX) + "\n")
+            file.write(str(self.sensorY))
+            file.close()
